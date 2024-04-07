@@ -1,90 +1,31 @@
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect, useState } from "react";
+import Layout from "./pages/Layout";
+import Home from "./pages/Home";
+import Details from "./pages/Details";
 
-function App() {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filteredUsers, setFilteredUsers] = useState([]);
-  const [totalItems, setTotalItems] = useState(0);
-  const [averagePrice, setAveragePrice] = useState(0);
-  const [highestPrice, setHighestPrice] = useState(0);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      const response = await fetch("http://api.coincap.io/v2/assets");
-      const jsonData = await response.json();
-      setUsers(jsonData.data);
-      setLoading(false);
-    };
-    fetchData();
-  }, []);
+export default function App() {
 
-  useEffect(() => {
-    // Calculate total number of items
-    setTotalItems(users.length);
+    const [data, setData] = useState([]);
 
-    // Calculate average price
-    const totalPrices = users.reduce((acc, user) => acc + parseFloat(user.priceUsd), 0);
-    const avgPrice = totalPrices / users.length;
-    setAveragePrice(avgPrice);
+    useEffect(() => {
+        const fetchData = async () => {
+            const response = await fetch("http://api.coincap.io/v2/assets");
+            const jsonData = await response.json();
+            setData(jsonData.data);
+        };
+        fetchData();
+    }, []);
 
-    // Find highest price
-    const highest = users.reduce((max, user) => (parseFloat(user.priceUsd) > max ? parseFloat(user.priceUsd) : max), 0);
-    setHighestPrice(highest);
-  }, [users]);
-
-  useEffect(() => {
-    // Filter users based on search term
-    const filtered = users.filter(user =>
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.symbol.toLowerCase().includes(searchTerm.toLowerCase())
+    return (
+        <BrowserRouter>
+            <Routes>
+                <Route path="/" element={<Layout />}>
+                    <Route index element={<Home data={data} />} />
+                    <Route path="details/:id" element={<Details data={data} />} />
+                </Route>
+            </Routes>
+        </BrowserRouter>
     );
-    setFilteredUsers(filtered);
-  }, [searchTerm, users]);
-
-  const handleSearch = event => {
-    setSearchTerm(event.target.value);
-  };
-
-  return (
-    <div className="App">
-      <h1>Crypto Dashboard</h1>
-
-      <input type="text" value={searchTerm} onChange={handleSearch} placeholder="Search by name or symbol" />
-      <button onClick={() => setSearchTerm("")}>Clear</button>
-
-      <div>
-        <h2>Summary Statistics</h2>
-        <p>Total Items: {totalItems}</p>
-        <p>Average Price (USD): ${averagePrice.toFixed(2)}</p>
-        <p>Highest Price (USD): ${highestPrice.toFixed(2)}</p>
-      </div>
-
-      <table border={1}>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Symbol</th>
-            <th>Supply</th>
-            <th>Change Percent 24 Hr</th>
-            <th>Price USD</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredUsers.map(user => (
-            <tr key={user.id}>
-              <td>{user.name}</td>
-              <td>{user.symbol}</td>
-              <td>{user.supply}</td>
-              <td>{user.changePercent24Hr}%</td>
-              <td>${user.priceUsd}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
 }
-
-export default App;
